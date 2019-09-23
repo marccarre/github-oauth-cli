@@ -13,3 +13,6 @@
 
 # Binary generate by go build:
 github-oauth-cli 
+
+# direnv's file:
+.envrc
