@@ -1,51 +1,43 @@
-/*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
-	"fmt"
+	"context"
 
+	gh "github.com/google/go-github/v28/github"
+	"github.com/marccarre/github-oauth-cli/pkg/github"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-// addDeployKeyCmd represents the addDeployKey command
+// addDeployKeyCmd represents the add-deploy-key command
 var addDeployKeyCmd = &cobra.Command{
-	Use:   "addDeployKey",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("addDeployKey called")
-	},
+	Use:   "add-deploy-key",
+	Short: "Add a GitHub deploy key to the selected repository",
+	Run:   addDeployKeyRun,
 }
+
+type addDeployKeyParams struct {
+	repository string
+}
+
+var params addDeployKeyParams
 
 func init() {
 	rootCmd.AddCommand(addDeployKeyCmd)
+	addDeployKeyCmd.Flags().StringVarP(&params.repository, "repository", "r", "", "GitHub repository to add the deploy key to")
+}
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addDeployKeyCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addDeployKeyCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func addDeployKeyRun(cmd *cobra.Command, args []string) {
+	log.WithFields(log.Fields{"repository": params.repository}).Info("add-deploy-key called")
+	ctx := context.Background()
+	client, err := github.NewClient(ctx, github.Owner(params.repository))
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Fatal("failed to initialise GitHub client")
+	}
+	client.AddDeployKey(ctx, params.repository, &gh.Key{
+		ID:       "flux",
+		Title:    "flux",
+		ReadOnly: false,
+		Key:      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCvsl/Sv2HJX/Wod0YbetsnHAVChHBv1u/QR0tuDSVptXCV5NPklkMztn4F9/0BD9mqC41F32iglX8CFBUi6OEApmtY7+ixgDj/KjCdj08HY90TJoS77pL+bvsszwvoL8P8ET5d3IiYE+CglpS2qFxggb9jcMoWtlHHRGIME0EO7FeNyira3T48DhJOaAloUsGyOCtWswrWvAPkSnfKUXzPgoChNPsJIuHUgMEySPYIm7gjGPeIywMcdu5dcM/E6W7utfBTNo9yzcJG48vAquq9hiOvyi+aoa01QNJMtIkhn33FXyjPHSQv83QveXKS+RqQjc2chJMHBNbk3z1P7OrNtlzwlrRWwC+8w5/dam28Rk8L5ejdBqLmmLmR+/h4WEmh8R7jAEsOcy7Lc94zHVpguZo1Mq9jAMFo8CnH8raxtheGXbx6WG4l9B7HNOl2Y+Nx8w3H1sgCLvhiSNkNMXomO+ZRYZqe4XbLrmuvtQdxWMy2dkhCqI3K3OJ8Fs1+igvj3ZCYcj7VSR+PA0ZssdeIVoQbB6EZZrJEhWCYOlt8xXEgnudghpN1vY1ZBi/sY6JiHg1qKdgCLcTkMQ2qZ0UiDaEp/XUbNaBVq9+CT7M14jq9DjLCjsnzUv/mdWJA8mAWJLOd98UjRnNWMwmOxZrxCOwwuPW20GXlpGU7KWqbfw==",
+	})
 }
